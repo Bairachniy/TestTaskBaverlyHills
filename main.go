@@ -4,6 +4,7 @@ import (
 	"baverly/config"
 	"baverly/db/migrations"
 	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	bindata "github.com/golang-migrate/migrate/v4/source/go_bindata"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
