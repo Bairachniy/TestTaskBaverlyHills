@@ -3,13 +3,14 @@ package main
 import (
 	"baverly/config"
 	"baverly/db/migrations"
+	"baverly/service"
+	"database/sql"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	bindata "github.com/golang-migrate/migrate/v4/source/go_bindata"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
-	"net/http"
 )
 
 func main() {
@@ -20,6 +21,8 @@ func main() {
 		log.Fatal("Failed to load config: ", err)
 	}
 
+	dbConn := connectToDBOrFatal(conf.DSN)
+
 	s := bindata.Resource(migrations.AssetNames(), migrations.Asset)
 	runDBMigrate(conf.DSN, s)
 
@@ -28,9 +31,7 @@ func main() {
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
-	e.GET("/", func(c echo.Context) error {
-		return c.String(http.StatusOK, "test Beverly Hills server")
-	})
+	service.InitService(dbConn, e)
 
 	e.Logger.Fatal(e.Start(":8088"))
 }
@@ -51,4 +52,18 @@ func runDBMigrate(dsn string, source *bindata.AssetSource) {
 			log.Fatal(err)
 		}
 	}
+}
+
+func connectToDBOrFatal(dsn string) *sql.DB {
+	driver := "postgres"
+	dbConn, err := sql.Open(driver, dsn)
+	if err != nil {
+		log.Fatal("Failed to open connection to database: ", err)
+	}
+	err = dbConn.Ping()
+	if err != nil {
+		log.Fatal("Failed to connect to database: ", err)
+	}
+
+	return dbConn
 }
